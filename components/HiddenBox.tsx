@@ -99,7 +99,7 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
     <div
       ref={setNodeRef}
       style={style}
-      className="w-152 h-104 z-10 mr-20 bg-white border opacity-90 absolute -right-256 top-10 rounded-xl shadow-lg"
+      className="w-152 h-104 z-10 mr-20 absolute -right-256 top-10 rounded-xl border border-slate-200 bg-white/95 shadow-lg dark:border-slate-700 dark:bg-slate-900/95"
     >
       <div
         {...listeners}
@@ -112,7 +112,7 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
               setSelectedLab(null);
             }}
             onPointerDown={(e) => e.stopPropagation()}
-            className="px-3 py-1 border rounded"
+            className="px-3 py-1 border rounded border-slate-300 text-slate-700 bg-white hover:bg-slate-50 dark:border-slate-600 dark:text-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700"
           >
             Labs
           </button>
@@ -120,7 +120,7 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
             type="text"
             name="search"
             id="search"
-            className="border rounded-xl px-3 py-1 w-full"
+            className="border rounded-xl px-3 py-1 w-full border-slate-300 bg-white text-slate-800 placeholder:text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-400"
             placeholder={selectedLab ? "Search questions" : "Search labs"}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -133,7 +133,7 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
             {filteredLabs.map((lab) => (
               <div
                 key={lab.id}
-                className="p-2 border-b cursor-pointer hover:bg-gray-50"
+                className="p-2 border-b border-slate-200 text-slate-800 cursor-pointer hover:bg-slate-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
                 onClick={() => setSelectedLab(lab)}
                 onPointerDown={(e) => e.stopPropagation()}
               >
@@ -145,11 +145,13 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
 
         {selectedLab && (
           <div>
-            <h2 className="text-lg font-bold mb-2">{selectedLab.lab_name}</h2>
+            <h2 className="text-lg font-bold mb-2 text-slate-900 dark:text-slate-100">
+              {selectedLab.lab_name}
+            </h2>
             {filteredQuestions.length > 0 ? (
               filteredQuestions.map((question) => (
                 <div className="flex justify-between gap-3" key={question.id}>
-                  <div className="p-2 border-b min-w-0">
+                  <div className="p-2 border-b border-slate-200 min-w-0 text-slate-800 dark:border-slate-700 dark:text-slate-100">
                     {question.display_order}. {question.question_text}
                   </div>
                   <div
@@ -157,7 +159,7 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
                     className="copy-button shrink-0"
                   >
                     <button
-                      className="px-3 py-1 rounded bg-blue-600 text-white"
+                      className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400"
                       onClick={() => {
                         navigator.clipboard.writeText(question.answer || "");
                       }}
@@ -168,7 +170,7 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
                 </div>
               ))
             ) : (
-              <p>
+              <p className="text-slate-600 dark:text-slate-300">
                 {labQuestions.length === 0
                   ? "No questions found for this lab."
                   : "No matching questions for this search."}

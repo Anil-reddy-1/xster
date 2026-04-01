@@ -1,8 +1,21 @@
 "use client";
 
 import { DndContext, useDraggable } from "@dnd-kit/core";
-import { useState } from "react";
-import { labs, weekQuestions } from "./constants";
+import { useEffect, useMemo, useState } from "react";
+
+type Lab = {
+  id: string;
+  lab_name: string;
+  lab_code: string;
+};
+
+type LabQuestion = {
+  id: string;
+  lab_id: string;
+  question_text: string;
+  answer: string;
+  display_order: number;
+};
 
 function DraggableBox({ position }: { position: { x: number; y: number } }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -17,33 +30,89 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
     transition: isDragging ? "none" : "transform 0.2s ease",
   };
 
-  const [selectedLab, setSelectedLab] = useState<any>(null);
-  const [LabWeeks, setLabWeeks] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [selectedLab, setSelectedLab] = useState<Lab | null>(null);
+  const [labQuestions, setLabQuestions] = useState<LabQuestion[]>([]);
 
-  const selectLab = (lab: any) => {
-    setSelectedLab(lab);
-    console.log("Selected Lab:", lab);
-    const weeks = weekQuestions.filter((w) => w.lab_id === lab.id);
-    setLabWeeks(weeks);
+  const fetchLabs = async () => {
+    const res = await fetch("/api/db/labs", { cache: "no-store" });
+    if (!res.ok) return;
+    const rows = (await res.json()) as Lab[];
+    rows.sort((a, b) => a.lab_name.localeCompare(b.lab_name));
+    setLabs(rows);
   };
+
+  const fetchQuestions = async (labId: string) => {
+    const res = await fetch(
+      `/api/db/labQuestions?field=lab_id&value=${labId}`,
+      {
+        cache: "no-store",
+      },
+    );
+    if (!res.ok) return;
+    const rows = (await res.json()) as LabQuestion[];
+    rows.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+    setLabQuestions(rows);
+  };
+
+  useEffect(() => {
+    fetchLabs();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedLab) {
+      setLabQuestions([]);
+      return;
+    }
+    fetchQuestions(selectedLab.id);
+  }, [selectedLab]);
+
+  const filteredLabs = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) {
+      return labs;
+    }
+    return labs.filter(
+      (lab) =>
+        lab.lab_name.toLowerCase().includes(term) ||
+        lab.lab_code.toLowerCase().includes(term),
+    );
+  }, [labs, search]);
+
+  const filteredQuestions = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) {
+      return labQuestions;
+    }
+    return labQuestions.filter((question) => {
+      const order = String(question.display_order || "");
+      return (
+        question.question_text.toLowerCase().includes(term) ||
+        question.answer.toLowerCase().includes(term) ||
+        order.includes(term)
+      );
+    });
+  }, [labQuestions, search]);
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="w-150 h-100 z-10 mr-20 bg-white border opacity-80 absolute -right-250 top-10 rounded-xl shadow-lg"
+      className="w-152 h-104 z-10 mr-20 bg-white border opacity-90 absolute -right-256 top-10 rounded-xl shadow-lg"
     >
       <div
         {...listeners}
         {...attributes}
-        className=" w-150 h-100 p-4 cursor-grab mb-2 overflow-y-auto"
+        className="w-full h-full p-4 cursor-grab mb-2 overflow-y-auto"
       >
-        <div className="header flex justify-between mb-4">
+        <div className="header flex justify-between mb-4 gap-2">
           <button
             onClick={() => {
               setSelectedLab(null);
             }}
             onPointerDown={(e) => e.stopPropagation()}
+            className="px-3 py-1 border rounded"
           >
             Labs
           </button>
@@ -51,21 +120,24 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
             type="text"
             name="search"
             id="search"
-            className="border rounded-xl pl-3"
+            className="border rounded-xl px-3 py-1 w-full"
+            placeholder={selectedLab ? "Search questions" : "Search labs"}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             onPointerDown={(e) => e.stopPropagation()}
           />
         </div>
 
         {!selectedLab && (
           <div>
-            {labs.map((lab) => (
+            {filteredLabs.map((lab) => (
               <div
                 key={lab.id}
-                className="p-2 border-b"
-                onClick={() => selectLab(lab)}
+                className="p-2 border-b cursor-pointer hover:bg-gray-50"
+                onClick={() => setSelectedLab(lab)}
                 onPointerDown={(e) => e.stopPropagation()}
               >
-                {lab.lab_name}
+                {lab.lab_name} ({lab.lab_code})
               </div>
             ))}
           </div>
@@ -74,17 +146,20 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
         {selectedLab && (
           <div>
             <h2 className="text-lg font-bold mb-2">{selectedLab.lab_name}</h2>
-            {LabWeeks.length > 0 ? (
-              LabWeeks.map((week) => (
-                <div className="flex justify-between " key={week.id}>
-                  <div className="p-2 border-b">{week.question_text}</div>
+            {filteredQuestions.length > 0 ? (
+              filteredQuestions.map((question) => (
+                <div className="flex justify-between gap-3" key={question.id}>
+                  <div className="p-2 border-b min-w-0">
+                    {question.display_order}. {question.question_text}
+                  </div>
                   <div
                     onPointerDown={(e) => e.stopPropagation()}
-                    className="copy-button"
+                    className="copy-button shrink-0"
                   >
                     <button
+                      className="px-3 py-1 rounded bg-blue-600 text-white"
                       onClick={() => {
-                        navigator.clipboard.writeText(week.answer);
+                        navigator.clipboard.writeText(question.answer || "");
                       }}
                     >
                       Copy
@@ -93,7 +168,11 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
                 </div>
               ))
             ) : (
-              <p>No questions found for this lab.</p>
+              <p>
+                {labQuestions.length === 0
+                  ? "No questions found for this lab."
+                  : "No matching questions for this search."}
+              </p>
             )}
           </div>
         )}

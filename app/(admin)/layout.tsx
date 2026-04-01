@@ -27,11 +27,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <h1 className="text-2xl font-bold m-4">Admin Page</h1>
-        <p className="mt-4 m-2">
-          This is the admin page. You can add, edit, or delete labs and
-          questions here.
-        </p>
+       
         {children}
       </body>
     </html>

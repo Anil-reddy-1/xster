@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import {
-  programs,
-  departments,
-  academicYears,
   labs,
-  labWeeks,
   weekQuestions,
 } from "@/components/constants";
+
+const labQuestions = weekQuestions.map((q: any) => ({
+  id: q.id,
+  lab_id: String(q.lab_id),
+  question_text: q.question_text,
+  answer: q.answer,
+  display_order: q.display_order ?? 0,
+  copy_text: q.copy_text ?? null,
+}));
 
 export async function GET() {
   try {
@@ -21,12 +26,15 @@ export async function GET() {
       });
     };
 
-    addCollection("programs", programs);
-    addCollection("departments", departments);
-    addCollection("academicYears", academicYears);
-    addCollection("labs", labs);
-    if (typeof labWeeks !== "undefined") addCollection("labWeeks", labWeeks);
-    if (typeof weekQuestions !== "undefined") addCollection("weekQuestions", weekQuestions);
+    addCollection(
+      "labs",
+      labs.map((lab: any) => ({
+        id: lab.id,
+        lab_name: lab.lab_name,
+        lab_code: lab.lab_code,
+      })),
+    );
+    addCollection("labQuestions", labQuestions);
 
     await batch.commit();
 

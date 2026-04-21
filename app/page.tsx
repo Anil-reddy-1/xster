@@ -27,7 +27,7 @@ export default function Home() {
     <div>
       <iframe
         src="https://ubuntu.com/server/docs/reference/high-availability/migrate-from-crmsh-to-pcs/"
-        className="min-w-full min-h-190 z-0"
+        className="min-w-full min-h-screen z-0"
       ></iframe>
       {show && <HiddenBox />}
       <button

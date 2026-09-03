@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import ConfirmDialog from "../../../../../components/ConfirmDialog";
 
 type Lab = {
   id: string;
@@ -45,6 +46,7 @@ export default function LabQuestionsPage() {
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [confirmDeleteQuestionId, setConfirmDeleteQuestionId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>({
     question_text: "",
     answer: "",
@@ -167,9 +169,6 @@ export default function LabQuestionsPage() {
   };
 
   const deleteQuestion = async (id: string) => {
-    if (!confirm("Delete this question?")) {
-      return;
-    }
     const res = await fetch(`/api/db/labQuestions/${id}`, {
       method: "DELETE",
     });
@@ -279,7 +278,7 @@ export default function LabQuestionsPage() {
                       Edit
                     </button>
                     <button
-                      onClick={() => deleteQuestion(qItem.id)}
+                      onClick={() => setConfirmDeleteQuestionId(qItem.id)}
                       className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/40"
                     >
                       Delete
@@ -385,6 +384,19 @@ export default function LabQuestionsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={!!confirmDeleteQuestionId}
+        title="Delete Question"
+        message="Delete this question?"
+        onConfirm={() => {
+          if (confirmDeleteQuestionId) {
+            deleteQuestion(confirmDeleteQuestionId);
+          }
+          setConfirmDeleteQuestionId(null);
+        }}
+        onCancel={() => setConfirmDeleteQuestionId(null)}
+      />
     </div>
   );
 }

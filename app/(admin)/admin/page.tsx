@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import ConfirmDialog from "../../../components/ConfirmDialog";
 
 type Lab = {
   id: string;
@@ -24,6 +25,7 @@ export default function AdminPage() {
   const [form, setForm] = useState({ lab_name: "", lab_code: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [confirmDeleteLabId, setConfirmDeleteLabId] = useState<string | null>(null);
 
   const fetchLabs = async () => {
     setLoading(true);
@@ -100,11 +102,7 @@ export default function AdminPage() {
     }
   };
 
-  const deleteLab = async (labId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm("Delete this lab and all of its questions?")) {
-      return;
-    }
+  const deleteLab = async (labId: string) => {
     const res = await fetch(`/api/db/labs/${labId}`, { method: "DELETE" });
     if (!res.ok) {
       setError("Failed to delete lab");
@@ -196,7 +194,10 @@ export default function AdminPage() {
                       Edit
                     </button>
                     <button
-                      onClick={(e) => deleteLab(lab.id, e)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDeleteLabId(lab.id);
+                      }}
                       className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/40"
                     >
                       Delete
@@ -255,6 +256,19 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={!!confirmDeleteLabId}
+        title="Delete Lab"
+        message="Delete this lab and all of its questions?"
+        onConfirm={() => {
+          if (confirmDeleteLabId) {
+            deleteLab(confirmDeleteLabId);
+          }
+          setConfirmDeleteLabId(null);
+        }}
+        onCancel={() => setConfirmDeleteLabId(null)}
+      />
     </div>
   );
 }

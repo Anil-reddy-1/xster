@@ -15,6 +15,7 @@ type LabQuestion = {
   question_text: string;
   answer: string;
   display_order: number;
+  week_name?: string;
 };
 
 function DraggableBox({ position }: { position: { x: number; y: number } }) {
@@ -33,6 +34,7 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
   const [search, setSearch] = useState("");
   const [labs, setLabs] = useState<Lab[]>([]);
   const [selectedLab, setSelectedLab] = useState<Lab | null>(null);
+  const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
   const [labQuestions, setLabQuestions] = useState<LabQuestion[]>([]);
 
   const fetchLabs = async () => {
@@ -63,6 +65,7 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
   useEffect(() => {
     if (!selectedLab) {
       setLabQuestions([]);
+      setSelectedWeek(null);
       return;
     }
     fetchQuestions(selectedLab.id);
@@ -90,10 +93,26 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
       return (
         question.question_text.toLowerCase().includes(term) ||
         question.answer.toLowerCase().includes(term) ||
-        order.includes(term)
+        order.includes(term) ||
+        (question.week_name && question.week_name.toLowerCase().includes(term))
       );
     });
   }, [labQuestions, search]);
+
+  const uniqueWeeks = useMemo(() => {
+    const weeks = new Set<string>();
+    filteredQuestions.forEach((q) => {
+      weeks.add(q.week_name || "Uncategorized");
+    });
+    return Array.from(weeks).sort();
+  }, [filteredQuestions]);
+
+  const questionsForSelectedWeek = useMemo(() => {
+    if (!selectedWeek) return [];
+    return filteredQuestions.filter(
+      (q) => (q.week_name || "Uncategorized") === selectedWeek
+    );
+  }, [filteredQuestions, selectedWeek]);
 
   return (
     <div
@@ -109,19 +128,23 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
         <div className="header flex justify-between mb-4 gap-2">
           <button
             onClick={() => {
-              setSelectedLab(null);
+              if (selectedWeek) {
+                setSelectedWeek(null);
+              } else {
+                setSelectedLab(null);
+              }
             }}
             onPointerDown={(e) => e.stopPropagation()}
             className="px-3 py-1 border rounded border-slate-300 text-slate-700 bg-white hover:bg-slate-50 dark:border-slate-600 dark:text-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700"
           >
-            Labs
+            {selectedWeek ? "Weeks" : "Labs"}
           </button>
           <input
             type="text"
             name="search"
             id="search"
             className="border rounded-xl px-3 py-1 w-full border-slate-300 bg-white text-slate-800 placeholder:text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-400"
-            placeholder={selectedLab ? "Search questions" : "Search labs"}
+            placeholder={selectedWeek ? "Search files" : selectedLab ? "Search weeks/files" : "Search labs"}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onPointerDown={(e) => e.stopPropagation()}
@@ -143,13 +166,37 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
           </div>
         )}
 
-        {selectedLab && (
+        {selectedLab && !selectedWeek && (
           <div>
             <h2 className="text-lg font-bold mb-2 text-slate-900 dark:text-slate-100">
-              {selectedLab.lab_name}
+              {selectedLab.lab_name} - Weeks
             </h2>
-            {filteredQuestions.length > 0 ? (
-              filteredQuestions.map((question) => (
+            {uniqueWeeks.length > 0 ? (
+              uniqueWeeks.map((week) => (
+                <div
+                  key={week}
+                  className="p-2 border-b border-slate-200 text-slate-800 cursor-pointer hover:bg-slate-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
+                  onClick={() => setSelectedWeek(week)}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  {week}
+                </div>
+              ))
+            ) : (
+              <p className="text-slate-600 dark:text-slate-300">
+                No weeks found for this lab.
+              </p>
+            )}
+          </div>
+        )}
+
+        {selectedLab && selectedWeek && (
+          <div>
+            <h2 className="text-lg font-bold mb-2 text-slate-900 dark:text-slate-100">
+              {selectedWeek}
+            </h2>
+            {questionsForSelectedWeek.length > 0 ? (
+              questionsForSelectedWeek.map((question) => (
                 <div className="flex justify-between gap-3" key={question.id}>
                   <div className="p-2 border-b border-slate-200 min-w-0 text-slate-800 dark:border-slate-700 dark:text-slate-100">
                     {question.display_order}. {question.question_text}
@@ -171,9 +218,7 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
               ))
             ) : (
               <p className="text-slate-600 dark:text-slate-300">
-                {labQuestions.length === 0
-                  ? "No questions found for this lab."
-                  : "No matching questions for this search."}
+                No matching files for this search.
               </p>
             )}
           </div>

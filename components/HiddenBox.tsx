@@ -15,6 +15,7 @@ type LabQuestion = {
   question_text: string;
   answer: string;
   display_order: number;
+  week_name?: string;
 };
 
 function DraggableBox({ position }: { position: { x: number; y: number } }) {
@@ -33,6 +34,7 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
   const [search, setSearch] = useState("");
   const [labs, setLabs] = useState<Lab[]>([]);
   const [selectedLab, setSelectedLab] = useState<Lab | null>(null);
+  const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
   const [labQuestions, setLabQuestions] = useState<LabQuestion[]>([]);
 
   const fetchLabs = async () => {
@@ -63,6 +65,7 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
   useEffect(() => {
     if (!selectedLab) {
       setLabQuestions([]);
+      setSelectedWeek(null);
       return;
     }
     fetchQuestions(selectedLab.id);
@@ -90,10 +93,26 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
       return (
         question.question_text.toLowerCase().includes(term) ||
         question.answer.toLowerCase().includes(term) ||
-        order.includes(term)
+        order.includes(term) ||
+        (question.week_name && question.week_name.toLowerCase().includes(term))
       );
     });
   }, [labQuestions, search]);
+
+  const uniqueWeeks = useMemo(() => {
+    const weeks = new Set<string>();
+    filteredQuestions.forEach((q) => {
+      weeks.add(q.week_name || "Uncategorized");
+    });
+    return Array.from(weeks).sort();
+  }, [filteredQuestions]);
+
+  const questionsForSelectedWeek = useMemo(() => {
+    if (!selectedWeek) return [];
+    return filteredQuestions.filter(
+      (q) => (q.week_name || "Uncategorized") === selectedWeek
+    );
+  }, [filteredQuestions, selectedWeek]);
 
   return (
     <div
@@ -121,7 +140,7 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
             name="search"
             id="search"
             className="border rounded-xl px-3 py-1 w-full border-slate-300 bg-white text-slate-800 placeholder:text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-400"
-            placeholder={selectedLab ? "Search questions" : "Search labs"}
+            placeholder={selectedLab ? "Search weeks/files" : "Search labs"}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onPointerDown={(e) => e.stopPropagation()}
@@ -148,32 +167,56 @@ function DraggableBox({ position }: { position: { x: number; y: number } }) {
             <h2 className="text-lg font-bold mb-2 text-slate-900 dark:text-slate-100">
               {selectedLab.lab_name}
             </h2>
-            {filteredQuestions.length > 0 ? (
-              filteredQuestions.map((question) => (
-                <div className="flex justify-between gap-3" key={question.id}>
-                  <div className="p-2 border-b border-slate-200 min-w-0 text-slate-800 dark:border-slate-700 dark:text-slate-100">
-                    {question.display_order}. {question.question_text}
-                  </div>
+            {uniqueWeeks.length > 0 ? (
+              uniqueWeeks.map((week) => (
+                <div key={week} className="mb-2">
                   <div
+                    className="p-2 border-b border-slate-200 text-slate-800 cursor-pointer hover:bg-slate-50 flex justify-between items-center dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
+                    onClick={() => setSelectedWeek(selectedWeek === week ? null : week)}
                     onPointerDown={(e) => e.stopPropagation()}
-                    className="copy-button shrink-0"
                   >
-                    <button
-                      className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400"
-                      onClick={() => {
-                        navigator.clipboard.writeText(question.answer || "");
-                      }}
-                    >
-                      Copy
-                    </button>
+                    <span className="font-semibold">{week}</span>
+                    <span className="text-slate-400">
+                      {selectedWeek === week ? "▼" : "▶"}
+                    </span>
                   </div>
+                  {selectedWeek === week && (
+                    <div className="pl-4 py-2 bg-slate-50/50 dark:bg-slate-800/30 rounded-b-lg border-b border-x border-slate-200 dark:border-slate-700">
+                      {questionsForSelectedWeek.length > 0 ? (
+                        questionsForSelectedWeek.map((question) => (
+                          <div className="flex justify-between gap-3 mb-2 last:mb-0" key={question.id}>
+                            <div className="p-2 min-w-0 text-slate-700 dark:text-slate-200 text-sm">
+                              {question.display_order}. {question.question_text}
+                            </div>
+                            <div
+                              onPointerDown={(e) => e.stopPropagation()}
+                              className="copy-button shrink-0 pr-2 pt-1"
+                            >
+                              <button
+                                className="px-3 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(question.answer || "");
+                                }}
+                              >
+                                Copy
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-slate-500 dark:text-slate-400 px-2">
+                          No files found.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))
             ) : (
               <p className="text-slate-600 dark:text-slate-300">
                 {labQuestions.length === 0
-                  ? "No questions found for this lab."
-                  : "No matching questions for this search."}
+                  ? "No files found for this lab."
+                  : "No matching weeks/files for this search."}
               </p>
             )}
           </div>

@@ -17,6 +17,7 @@ type LabQuestion = {
   answer: string;
   display_order: number;
   copy_text?: string | null;
+  week_name?: string;
 };
 
 type FormState = {
@@ -24,6 +25,7 @@ type FormState = {
   answer: string;
   display_order: number;
   copy_text: string;
+  week_name: string;
 };
 
 const getErrorMessage = (error: unknown, fallback: string) => {
@@ -52,6 +54,7 @@ export default function LabQuestionsPage() {
     answer: "",
     display_order: 1,
     copy_text: "",
+    week_name: "",
   });
 
   const fetchLabAndQuestions = useCallback(async () => {
@@ -102,6 +105,7 @@ export default function LabQuestionsPage() {
         answer: qItem.answer || "",
         display_order: qItem.display_order || 1,
         copy_text: qItem.copy_text || "",
+        week_name: qItem.week_name || "",
       });
     } else {
       setEditingQuestionId(null);
@@ -110,6 +114,7 @@ export default function LabQuestionsPage() {
         answer: "",
         display_order: questions.length + 1,
         copy_text: "",
+        week_name: "",
       });
     }
     setIsModalOpen(true);
@@ -135,6 +140,7 @@ export default function LabQuestionsPage() {
         answer: form.answer,
         display_order: Number(form.display_order),
         copy_text: form.copy_text.trim() || null,
+        week_name: form.week_name.trim() || null,
       };
 
       if (editingQuestionId) {
@@ -263,9 +269,16 @@ export default function LabQuestionsPage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="mb-2 inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                      Q{qItem.display_order}
-                    </p>
+                    <div className="flex gap-2 mb-2 flex-wrap">
+                      <p className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        Q{qItem.display_order}
+                      </p>
+                      {qItem.week_name && (
+                        <p className="inline-flex rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300">
+                          {qItem.week_name}
+                        </p>
+                      )}
+                    </div>
                     <h3 className="line-clamp-3 text-base font-semibold text-slate-900 dark:text-slate-100">
                       {qItem.question_text}
                     </h3>
@@ -308,6 +321,20 @@ export default function LabQuestionsPage() {
               {editingQuestionId ? "Edit Question" : "Add Question"}
             </h2>
             <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                  Week Name (optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Week 1"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+                  value={form.week_name}
+                  onChange={(e) =>
+                    setForm({ ...form, week_name: e.target.value })
+                  }
+                />
+              </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
                   Question Number

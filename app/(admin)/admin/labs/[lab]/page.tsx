@@ -305,7 +305,7 @@ export default function LabQuestionsPage() {
                   </div>
                 ) : null}
 
-                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-mono text-slate-700 whitespace-pre-wrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                <div className="mt-3 line-clamp-[7] rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-mono text-slate-700 whitespace-pre-wrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                   {qItem.answer}
                 </div>
               </div>
